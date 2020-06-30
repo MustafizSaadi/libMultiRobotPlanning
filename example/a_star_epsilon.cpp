@@ -64,6 +64,7 @@ std::ostream& operator<<(std::ostream& os, const Action& a) {
       os << "Right";
       break;
   }
+  //printf("Wait disabled\n");
   return os;
 }
 
@@ -97,6 +98,7 @@ class Environment {
 
   void getNeighbors(const State& s,
                     std::vector<Neighbor<State, Action, int> >& neighbors) {
+    printf("Wait disabled\n");
     neighbors.clear();
 
     State up(s.x, s.y + 1);

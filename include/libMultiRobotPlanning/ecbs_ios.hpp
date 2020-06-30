@@ -2,7 +2,7 @@
 
 #include <map>
 
-#include "a_star_epsilon.hpp"
+#include "IOS.hpp"
 
 namespace libMultiRobotPlanning {
 
@@ -102,14 +102,14 @@ statistical purposes.
 */
 template <typename State, typename Action, typename Cost, typename Conflict,
           typename Constraints, typename Environment>
-class ECBS {
+class ECBS_IOS {
  public:
-  ECBS(Environment& environment, float w) : m_env(environment), m_w(w) {}
+  ECBS_IOS(Environment& environment, float w) : m_env(environment), m_w(w) {}
 
   bool search(const std::vector<State>& initialStates,
               std::vector<PlanResult<State, Action, Cost> >& solution) {
 
-    std:: cout<< "In ecbs search" <<  initialStates.size() << std:: endl;
+    std:: cout<< "In ecbs ios search" <<  initialStates.size() << std:: endl;
     HighLevelNode start;
     start.solution.resize(initialStates.size());
     start.constraints.resize(initialStates.size());
@@ -158,6 +158,7 @@ class ECBS {
     Cost bestCost = (*handle).cost;
 
     solution.clear();
+    //int soln =  INT_MAX;
     int id = 1;
     while (!open.empty()) {
 // update focal list
@@ -266,7 +267,7 @@ class ECBS {
         // (optional) check that this constraint was not included already
         // std::cout << newNode.constraints[i] << std::endl;
         // std::cout << c.second << std::endl;
-        assert(!newNode.constraints[i].overlap(c.second));
+        //assert(!newNode.constraints[i].overlap(c.second));
 
         newNode.constraints[i].add(c.second);
 
@@ -301,6 +302,34 @@ class ECBS {
         ++id;
       }
     }
+
+    
+    // while(!open.empty()){
+    //   const auto& nopen = open.top();
+
+    //   if(soln <= m_w * nopen.cost ){
+    //         //printf("Found\n");
+    //         return true;
+    //   }
+    //   else{
+    //     if(focal.empty()){
+    //       printf("Empty\n");
+    //       return false;
+    //     }
+    //     auto h = focal.top();
+    //     HighLevelNode P = *h;
+    //     m_env.onExpandHighLevelNode(P.cost);
+
+    //     focal.pop();    
+
+    //     Conflict conflict;
+    //     if (!m_env.getFirstConflict(P.solution, conflict)) {
+    //       std::cout << "done; cost: " << P.cost << std::endl;
+    //       solution = P.solution;
+    //       soln = P.cost;
+    //     }    
+    //   }
+    // }
 
     return false;
   }
@@ -436,7 +465,7 @@ class ECBS {
  private:
   Environment& m_env;
   float m_w;
-  typedef AStarEpsilon<State, Action, Cost, LowLevelEnvironment>
+  typedef IOS<State, Action, Cost, LowLevelEnvironment>
       LowLevelSearch_t;
 };
 

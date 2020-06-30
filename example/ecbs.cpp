@@ -6,10 +6,13 @@
 
 #include <yaml-cpp/yaml.h>
 
-#include <libMultiRobotPlanning/ecbs.hpp>
+#include </home/mustafizur/libMultiRobotPlanning/include/libMultiRobotPlanning/ecbs.hpp>
+#include </home/mustafizur/libMultiRobotPlanning/include/libMultiRobotPlanning/ecbs_ios.hpp>
+
 #include "timer.hpp"
 
 using libMultiRobotPlanning::ECBS;
+using libMultiRobotPlanning::ECBS_IOS;
 using libMultiRobotPlanning::Neighbor;
 using libMultiRobotPlanning::PlanResult;
 
@@ -72,6 +75,7 @@ std::ostream& operator<<(std::ostream& os, const Action& a) {
       os << "Wait";
       break;
   }
+  //std::cout<<"Wait enabled"<<std::endl;
   return os;
 }
 
@@ -363,6 +367,7 @@ class Environment {
     // }
     neighbors.clear();
     {
+      //printf("Wait enabled\n");
       State n(s.time + 1, s.x, s.y);
       if (stateValid(n) && transitionValid(s, n)) {
         neighbors.emplace_back(
@@ -573,32 +578,41 @@ int main(int argc, char* argv[]) {
     goals.emplace_back(Location(goal[0].as<int>(), goal[1].as<int>()));
   }
 
-  Environment mapf(dimx, dimy, obstacles, goals);
-  ECBS<State, Action, int, Conflict, Constraints, Environment> cbs(mapf, w);
-  std::vector<PlanResult<State, Action, int> > solution;
+  Environment mapf_ecbs(dimx, dimy, obstacles, goals);
+  Environment mapf_ios(dimx, dimy, obstacles, goals);
+  ECBS<State, Action, int, Conflict, Constraints, Environment> cbs(mapf_ecbs, w);
+  ECBS_IOS<State, Action, int, Conflict, Constraints, Environment> cbs_ios(mapf_ios, w);
+  std::vector<PlanResult<State, Action, int> > solution_Aeps;
+  std::vector<PlanResult<State, Action, int> > solution_ios;
 
-  Timer timer;
-  bool success = cbs.search(startStates, solution);
-  timer.stop();
+  Timer timer_ecbs;
+  bool success_ecbs = cbs.search(startStates, solution_Aeps);
+  timer_ecbs.stop();
 
-  if (success) {
-    std::cout << "Planning successful! " << std::endl;
+  // Timer timer_ios;
+  // bool success_ios = cbs_ios.search(startStates, solution_ios);
+  // timer_ios.stop();
+
+  std::ofstream out(outputFile);
+
+  if (success_ecbs) {
+    std::cout << "ECBS Planning successful! " << std::endl;
     int cost = 0;
     int makespan = 0;
-    for (const auto& s : solution) {
+    for (const auto& s : solution_Aeps) {
       cost += s.cost;
       makespan = std::max<int>(makespan, s.cost);
     }
 
-    std::ofstream out(outputFile);
-    out << "statistics:" << std::endl;
+    //std::ofstream out(outputFile);
+    out << "statistics_Aeps:" << std::endl;
     out << "  cost: " << cost << std::endl;
     out << "  makespan: " << makespan << std::endl;
-    out << "  runtime: " << timer.elapsedSeconds() << std::endl;
-    out << "  highLevelExpanded: " << mapf.highLevelExpanded() << std::endl;
-    out << "  lowLevelExpanded: " << mapf.lowLevelExpanded() << std::endl;
+    out << "  runtime: " << timer_ecbs.elapsedSeconds() << std::endl;
+    out << "  highLevelExpanded: " << mapf_ecbs.highLevelExpanded() << std::endl;
+    out << "  lowLevelExpanded: " << mapf_ecbs.lowLevelExpanded() << std::endl;
     out << "schedule:" << std::endl;
-    for (size_t a = 0; a < solution.size(); ++a) {
+    for (size_t a = 0; a < solution_Aeps.size(); ++a) {
       // std::cout << "Solution for: " << a << std::endl;
       // for (size_t i = 0; i < solution[a].actions.size(); ++i) {
       //   std::cout << solution[a].states[i].second << ": " <<
@@ -609,15 +623,55 @@ int main(int argc, char* argv[]) {
       // solution[a].states.back().first << std::endl;
 
       out << "  agent" << a << ":" << std::endl;
-      for (const auto& state : solution[a].states) {
+      for (const auto& state : solution_Aeps[a].states) {
         out << "    - x: " << state.first.x << std::endl
             << "      y: " << state.first.y << std::endl
             << "      t: " << state.second << std::endl;
       }
     }
   } else {
-    std::cout << "Planning NOT successful!" << std::endl;
+    std::cout << "ECBS Planning NOT successful!" << std::endl;
   }
+
+
+  // if (success_ios) {
+  //   std::cout << "IOS Planning successful! " << std::endl;
+  //   int cost = 0;
+  //   int makespan = 0;
+  //   for (const auto& s : solution_ios) {
+  //     cost += s.cost;
+  //     makespan = std::max<int>(makespan, s.cost);
+  //   }
+
+  //   //std::ofstream out(outputFile);
+  //   out << "statistics_IOS:" << std::endl;
+  //   out << "  cost: " << cost << std::endl;
+  //   out << "  makespan: " << makespan << std::endl;
+  //   out << "  runtime: " << timer_ios.elapsedSeconds() << std::endl;
+  //   out << "  highLevelExpanded: " << mapf_ios.highLevelExpanded() << std::endl;
+  //   out << "  lowLevelExpanded: " << mapf_ios.lowLevelExpanded() << std::endl;
+  //   out << "schedule:" << std::endl;
+  //   for (size_t a = 0; a < solution_ios.size(); ++a) {
+  //     // std::cout << "Solution for: " << a << std::endl;
+  //     // for (size_t i = 0; i < solution[a].actions.size(); ++i) {
+  //     //   std::cout << solution[a].states[i].second << ": " <<
+  //     //   solution[a].states[i].first << "->" << solution[a].actions[i].first
+  //     //   << "(cost: " << solution[a].actions[i].second << ")" << std::endl;
+  //     // }
+  //     // std::cout << solution[a].states.back().second << ": " <<
+  //     // solution[a].states.back().first << std::endl;
+
+  //     out << "  agent" << a << ":" << std::endl;
+  //     for (const auto& state : solution_ios[a].states) {
+  //       out << "    - x: " << state.first.x << std::endl
+  //           << "      y: " << state.first.y << std::endl
+  //           << "      t: " << state.second << std::endl;
+  //     }
+  //   }
+  // } else {
+  //   std::cout << "ECBS Planning NOT successful!" << std::endl;
+  // }
+
 
   return 0;
 }
